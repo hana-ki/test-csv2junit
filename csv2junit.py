@@ -1,37 +1,53 @@
+import argparse
 import csv
+import glob
 import xml.etree.ElementTree as ET
 from pprint import pprint
 
 
-def read_csv():
+def read_csv(files):    
     names = ['name', 'subname', 'foo', 'bar', 'sub-name', 'result', 'date']
-    with open('./sample.csv') as f:
-        reader = csv.DictReader(f, names)
-        data = [row for row in reader]
+    data = []
+    for file in files:
+        pprint(f"{file}----------------")
+        with open(file) as f:
+            reader = csv.DictReader(f, names)
+            data.append([row for row in reader])
     return data
         
-def csv2junit(data):
-    root = ET.Element('testsuites')
-    
-    for d in data:
-        if (d['name'] != ''):
-            major = d['name']
-            suite = ET.SubElement(root, 'testsuite')
-            
-        if (d['subname'] != ''):
-            minor = d['subname']
-            subsuite = ET.SubElement(suite, 'testsuite')
-            subsuite.set('classname', f'{major}.{minor}')
-            
-        case = ET.SubElement(subsuite, 'testcase')
-        kind = d['foo']
-        case.set('name', d['bar'])
-        case.set('classname', f'{major}.{minor}.{kind}')
+def csv2junit(dataset):
+    for data in dataset:
         
-        if (d['result'] == 'NG'):
-            ET.SubElement(case, 'failure', type='AssertionError')
-    
-    ET.indent(root)
-    ET.dump(root)
+        root = ET.Element('testsuites')    
+        for d in data:
+            if (d['name'] != ''):
+                major = d['name']
+                suite = ET.SubElement(root, 'testsuite')
+                
+            if (d['subname'] != ''):
+                minor = d['subname']
+                subsuite = ET.SubElement(suite, 'testsuite')
+                subsuite.set('classname', f'{major}.{minor}')
+                
+            case = ET.SubElement(subsuite, 'testcase')
+            kind = d['foo']
+            case.set('name', d['bar'])
+            case.set('classname', f'{major}.{minor}.{kind}')
+            
+            if (d['result'] == 'NG'):
+                ET.SubElement(case, 'failure', type='AssertionError')
+        
+        print('+'*20)
+        ET.indent(root)
+        ET.dump(root)
 
-csv2junit(read_csv())
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Convert CSV to JUnit XML format')
+    parser.add_argument('csv_path', type=str, nargs='+', help='Path to the input CSV file')
+    args = parser.parse_args()
+    
+    pprint(args)
+
+    data = read_csv(args.csv_path)
+    csv2junit(data)
+
